@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Video Player</title>
+  <link href="https://cdn.jsdelivr.net/npm/video.js/dist/video-js.min.css" rel="stylesheet">
+</head>
+
+<body>
+  <video
+    id="vid1"
+    class="video-js"
+    controls
+    width="800"
+    height="600"
+    preload="auto"
+    poster=""
+    data-setup='{}'>
+    <source src="https://xis.fifteennet.com/_v10/a60b51d1559e7f09e5f9cae52675ccaf1e9f71bae1914f5ce5d4977a9b2c04dcaeb704e606e0c38f0d4d865bf4f91a3358fa51b4f8c414a4d46bfd7efdb91442bb000552fa056b08d9ee34d39ab07a7748aad46446cacf54b37d35e757aafc65d665c72e628945983c4f87b358d1cb1d8b2a34a5ce4ba5f00557945cf9158ee8bfc7a1cc38bdbe6ebf33aad810e66404/1080/index.m3u8" type="application/x-mpegURL">
+    <track src="https://raw.githubusercontent.com/BNLOS/Subs/main/Movies/2023/TWTM.vtt" kind="subtitles" srclang="ar" label="Arabic" default>
+    <p class="vjs-no-js">
+      To view this video please enable JavaScript, and consider upgrading to a
+      web browser that
+      <a href="https://videojs.com/html5-video-support/" target="_blank">
+        supports HTML5 video
+      </a>
+    </p>
+  </video>
+
+  <script src="https://cdn.jsdelivr.net/npm/video.js/dist/video.min.js"></script>
+  <script src="SWM.js"></script>
+  <script>
+    var player = videojs('vid1');
+    var options = {
+      items: ["AudioTrackButton", "SubsCapsButton", "PlaybackRateMenuButton",
+        "ChaptersButton", "DescriptionsToggleMenuItem",
+        "CaptionsSettingsMenuItem"]
+    };
+  
+    player.settingsMenu(options);
+  </script>
+</body>
+
+</html>
