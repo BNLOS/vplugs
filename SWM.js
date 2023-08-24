@@ -1,3 +1,4 @@
+/*! @name @samueleastdev/videojs-settings-menu @version 0.0.9 @license MIT */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('video.js')) :
   typeof define === 'function' && define.amd ? define(['video.js'], factory) :
@@ -5,11 +6,9 @@
 })(this, (function (videojs) {
   'use strict';
 
-  var videojs__default = videojs["default"];
-
-  var Plugin = videojs__default.getPlugin('plugin');
-  var Component = videojs__default.getComponent('Component');
-  var Button = videojs__default.getComponent('MenuButton');
+  var Plugin = videojs.getPlugin('plugin');
+  var Component = videojs.getComponent('Component');
+  var Button = videojs.getComponent('MenuButton');
 
   var defaults = {
     items: ["AudioTrackButton", "SubsCapsButton", "PlaybackRateMenuButton", "RatesButton"],
@@ -27,161 +26,75 @@
     }
   };
 
-  var SettingsMenu = /*#__PURE__*/(function (_Plugin) {
-    inheritsLoose(SettingsMenu, _Plugin);
+  class SettingsMenu extends Plugin {
+    constructor(player, options) {
+      super(player);
+      this.options = videojs.mergeOptions(defaults, options);
 
-    function SettingsMenu(player, options) {
-      var _this;
-
-      _this = _Plugin.call(this, player) || this;
-
-      var self = assertThisInitialized(_this);
-
-      self.playerId = _this.player.id();
-      _this.options = videojs__default.mergeOptions(defaults, options);
-
-      _this.player.ready(function () {
-        _this.player.addClass('vjs-settings-menu');
-
-        _this.buildUI();
-
-        if (videojs__default.browser.IS_IOS || videojs__default.browser.IS_ANDROID) {
-          _this.mobileBuildUI();
+      this.player.ready(() => {
+        this.player.addClass('vjs-settings-menu');
+        this.buildUI();
+        if (videojs.browser.IS_IOS || videojs.browser.IS_ANDROID) {
+          this.mobileBuildUI();
         }
       });
 
-      _this.player.on("playbackRateSwitched", function (e) {
-        var rate = e.target.player.playbackRateSwitched;
-        this.getChild('controlBar').getChild('settingsMenuButton').controlText(rate.height + "p, " + self.formatBps(rate.bitrate));
+      this.player.on('playbackRateSwitched', (e) => {
+        const rate = e.target.player.playbackRateSwitched;
+        this.getChild('controlBar').getChild('settingsMenuButton').controlText(`${rate.height}p, ${this.formatBps(rate.bitrate)}`);
       });
 
-      _this.player.on('userinactive', function () {
-        document.getElementById(self.playerId).querySelectorAll('.vjs-menu').forEach(function (element) {
+      this.player.on('userinactive', () => {
+        document.getElementById(this.playerId).querySelectorAll('.vjs-menu').forEach((element) => {
           element.classList.remove('vjs-lock-open');
         });
       });
 
-      _this.player.on('click', function (evt) {
+      this.player.on('click', (evt) => {
         if (evt.target.tagName === 'VIDEO') {
-          document.getElementById(self.playerId).querySelectorAll('.vjs-menu').forEach(function (element) {
+          document.getElementById(this.playerId).querySelectorAll('.vjs-menu').forEach((element) => {
             element.classList.remove('vjs-lock-open');
           });
         }
       });
 
-      _this.player.on('loadstart', function (_event) {
-        this.one('canplaythrough', function (_evt) {
-          self.removeElementsByClass('vjs-setting-menu-clear');
-
-          if (videojs__default.browser.IS_IOS || videojs__default.browser.IS_ANDROID) {
-            self.mobileBuildTopLevelMenu();
+      this.player.on('loadstart', (_event) => {
+        this.one('canplaythrough', (_evt) => {
+          this.removeElementsByClass('vjs-setting-menu-clear');
+          if (videojs.browser.IS_IOS || videojs.browser.IS_ANDROID) {
+            this.mobileBuildTopLevelMenu();
           } else {
-            self.buildTopLevelMenu();
+            this.buildTopLevelMenu();
           }
         });
       });
-
-      return _this;
     }
 
-    var _proto = SettingsMenu.prototype;
+    buildUI() {
+      const settingsButton = this.player.getChild('controlBar').getChild('settingsMenuButton');
 
-    _proto.buildUI = function buildUI() {
-      var self = this;
+      settingsButton.menu;
+      const main = settingsButton.menu.contentEl_;
 
-      var SettingsMenuButton = /*#__PURE__*/(function (_Button) {
-        inheritsLoose(SettingsMenuButton, _Button);
+      main.innerHTML = "";
+      main.classList.add('vjs-sm-top-level');
 
-        function SettingsMenuButton(player, options) {
-          var _this2;
+      const menuTitle = document.createElement('li');
+      menuTitle.className = 'vjs-sm-top-level-header';
+      const menuTitleInner = document.createElement("span");
+      menuTitleInner.innerHTML = this.options.languages.settings;
+      menuTitle.appendChild(menuTitleInner);
+      main.appendChild(menuTitle);
 
-          _this2 = _Button.call(this, player, options) || this;
+      const comps = [];
+      let chapter = false;
+      let subtitles = false;
 
-          _this2.addClass('vjs-settings-menu');
-
-          _this2.controlText(self.options.languages.loading);
-
-          var that = assertThisInitialized(_this2);
-
-          self.player.one('canplaythrough', function (_event) {
-            that.controlText(self.options.languages.settings);
-          });
-
-          _this2.menu.contentEl_.id = self.playerId + '-vjs-settings-menu-default';
-          return _this2;
-        }
-
-        var _proto2 = SettingsMenuButton.prototype;
-
-        _proto2.handleClick = function handleClick() {
-          if (videojs__default.browser.IS_IOS || videojs__default.browser.IS_ANDROID) {
-            self.player.getChild('settingsMenuMobileModal').el().style.display = 'block';
-          } else {
-            this.el().classList.toggle('vjs-toogle-btn');
-            this.menu.el().classList.toggle('vjs-lock-open');
-          }
-        };
-
-        return SettingsMenuButton;
-      })(Button);
-
-      videojs__default.registerComponent('settingsMenuButton', SettingsMenuButton);
-      this.player.getChild('controlBar').addChild('settingsMenuButton');
-
-      if (this.player.getChild("controlBar").getChild("fullscreenToggle")) {
-        this.player.getChild('controlBar').el().insertBefore(this.player.getChild('controlBar').getChild('settingsMenuButton').el(), this.player.getChild('controlBar').getChild('fullscreenToggle').el());
-      }
-    };
-
-    _proto.mobileBuildUI = function mobileBuildUI() {
-      var self = this;
-
-      var SettingsMenuMobileModal = /*#__PURE__*/(function (_Component) {
-        inheritsLoose(SettingsMenuMobileModal, _Component);
-
-        function SettingsMenuMobileModal(player, options) {
-          return _Component.call(this, player, options) || this;
-        }
-
-        var _proto3 = SettingsMenuMobileModal.prototype;
-
-        _proto3.createEl = function createEl() {
-          return videojs__default.createEl('div', {
-            className: 'vjs-settings-menu-mobile'
-          });
-        };
-
-        return SettingsMenuMobileModal;
-      })(Component);
-
-      videojs__default.registerComponent('settingsMenuMobileModal', SettingsMenuMobileModal);
-      videojs__default.dom.prependTo(self.player.addChild('settingsMenuMobileModal').el(), document.body);
-    };
-
-    _proto.mobileBuildTopLevelMenu = function mobileBuildTopLevelMenu() {
-      var _this3 = this;
-
-      var self = this;
-      var settingsButton = this.player.getChild('settingsMenuMobileModal');
-      var menuTopLevel = document.createElement('ul');
-      menuTopLevel.className = 'vjs-sm-mob-top-level vjs-setting-menu-clear';
-      settingsButton.el().appendChild(menuTopLevel);
-
-      var menuTitle = document.createElement('li');
-      menuTitle.className = 'vjs-setting-menu-mobile-top-header';
-      menuTitle.innerHTML = this.options.languages.settings;
-      menuTopLevel.appendChild(menuTitle);
-
-      var comps = [];
-      var chapter = false;
-      var subtitles = false;
-
-      if (self.player.textTracks().tracks_) {
-        self.player.textTracks().tracks_.forEach(function (ele) {
+      if (this.player.textTracks().tracks_) {
+        this.player.textTracks().tracks_.forEach((ele) => {
           if (ele.kind === 'chapters') {
             chapter = true;
           }
-
           if (ele.kind === 'subtitles' || ele.kind === 'captions') {
             subtitles = true;
           }
@@ -196,149 +109,323 @@
         comps.push('SubsCapsButton');
       }
 
-      self.options.items.filter(function (item) {
-        return !comps.includes(item);
-      }).forEach(function (component) {
-        if (self.player.getChild('controlBar').getChild(component)) {
-          self.player.getChild('controlBar').getChild(component).addClass('vjs-hide-settings-menu-item');
-          var textContent = self.setInitialStates(component);
-          var settingItem = document.createElement('li');
-          settingItem.setAttribute('data-component', component.toLowerCase());
+      this.options.items.filter((item) => !comps.includes(item)).forEach((component) => {
+        if (this.player.getChild('controlBar').getChild(component)) {
+          const textContent = this.setInitialStates(component);
+          this.player.getChild('controlBar').getChild(component).addClass('vjs-hide-settings-menu-item');
+
+          const settingItem = document.createElement('li');
           settingItem.innerHTML = textContent.language;
-          settingItem.className = 'vjs-sm-top-level-item';
-          var settingItemSpan = document.createElement('span');
-          settingItemSpan.id = self.playerId + '-setting-menu-child-span-' + component.toLowerCase();
+          settingItem.setAttribute('data-component', component.toLowerCase());
+          settingItem.className = 'vjs-sm-list-item';
+
+          const settingItemArrow = document.createElement('i');
+          settingItemArrow.className = 'setting-menu-list-arrow setting-menu-list-arrow-right';
+          settingItem.appendChild(settingItemArrow);
+
+          const settingItemSpan = document.createElement('span');
+          settingItemSpan.id = `${this.playerId}-setting-menu-child-span-${component.toLowerCase()}`;
           settingItemSpan.innerHTML = textContent.default;
           settingItem.appendChild(settingItemSpan);
-          menuTopLevel.appendChild(settingItem);
 
-          setTimeout(function () {
-            self.mobileBuildSecondLevelMenu(component, settingsButton.el());
+          main.appendChild(settingItem);
+
+          setTimeout(() => {
+            this.buildMenuList(component);
           }, component === 'ChaptersButton' ? 1000 : 0);
         }
       });
 
-      var settingMenuItems = document.querySelectorAll('.vjs-sm-top-level-item');
-      Array.from(settingMenuItems).forEach(function (link) {
-        link.addEventListener('click', function (event) {
-          event.preventDefault();
-          var clickComponent = this.getAttribute('data-component');
-          document.querySelectorAll('.vjs-sm-mob-top-level').forEach(function (element) {
+      const settingMenuItems = document.querySelectorAll('.vjs-sm-list-item');
+      Array.from(settingMenuItems).forEach((link) => {
+        link.addEventListener('click', (event) => {
+          document.querySelectorAll('.vjs-sm-top-level').forEach((element) => {
             element.classList.add('vjs-hidden');
           });
-          document.getElementById(self.playerId + '-mb-comp-' + clickComponent).classList.remove('vjs-hidden');
+
+          const active = document.getElementById(`${this.playerId}-setting-menu-child-menu-${link.getAttribute('data-component')}`);
+          active.classList.remove('vjs-hidden');
+          active.classList.add('vjs-lock');
+
+          event.preventDefault();
+        });
+      });
+    }
+
+    mobileBuildUI() {
+      const settingsButton = this.player.getChild('settingsMenuMobileModal');
+
+      class SettingsMenuMobileModal extends Component {
+        createEl() {
+          return videojs.createEl('div', {
+            className: 'vjs-settings-menu-mobile'
+          });
+        }
+      }
+
+      videojs.registerComponent('settingsMenuMobileModal', SettingsMenuMobileModal);
+      videojs.dom.prependTo(this.player.addChild('settingsMenuMobileModal').el(), document.body);
+    }
+
+    mobileBuildTopLevelMenu() {
+      const settingsButton = this.player.getChild('settingsMenuMobileModal');
+      const menuTopLevel = document.createElement('ul');
+      menuTopLevel.className = 'vjs-sm-mob-top-level vjs-setting-menu-clear';
+      settingsButton.el().appendChild(menuTopLevel);
+
+      const menuTitle = document.createElement('li');
+      menuTitle.className = 'vjs-setting-menu-mobile-top-header';
+      menuTitle.innerHTML = this.options.languages.settings;
+      menuTopLevel.appendChild(menuTitle);
+
+      const comps = [];
+      let chapter = false;
+      let subtitles = false;
+
+      if (this.player.textTracks().tracks_) {
+        this.player.textTracks().tracks_.forEach((ele) => {
+          if (ele.kind === 'chapters') {
+            chapter = true;
+          }
+          if (ele.kind === 'subtitles' || ele.kind === 'captions') {
+            subtitles = true;
+          }
+        });
+      }
+
+      if (!chapter) {
+        comps.push('ChaptersButton');
+      }
+
+      if (!subtitles) {
+        comps.push('SubsCapsButton');
+      }
+
+      this.options.items.filter((item) => !comps.includes(item)).forEach((component) => {
+        if (this.player.getChild('controlBar').getChild(component)) {
+          this.player.getChild('controlBar').getChild(component).addClass('vjs-hide-settings-menu-item');
+          const textContent = this.setInitialStates(component);
+
+          const settingItem = document.createElement('li');
+          settingItem.setAttribute('data-component', component.toLowerCase());
+          settingItem.innerHTML = textContent.language;
+          settingItem.className = 'vjs-sm-top-level-item';
+
+          const settingItemSpan = document.createElement('span');
+          settingItemSpan.id = `${this.playerId}-setting-menu-child-span-${component.toLowerCase()}`;
+          settingItemSpan.innerHTML = textContent.default;
+          settingItem.appendChild(settingItemSpan);
+
+          menuTopLevel.appendChild(settingItem);
+
+          setTimeout(() => {
+            this.mobileBuildSecondLevelMenu(component, settingsButton.el());
+          }, component === 'ChaptersButton' ? 1000 : 0);
+        }
+      });
+
+      const settingMenuItems = document.querySelectorAll('.vjs-sm-top-level-item');
+      Array.from(settingMenuItems).forEach((link) => {
+        link.addEventListener('click', function (event) {
+          event.preventDefault();
+          const clickComponent = this.getAttribute('data-component');
+
+          document.querySelectorAll('.vjs-sm-mob-top-level').forEach((element) => {
+            element.classList.add('vjs-hidden');
+          });
+
+          document.getElementById(`${this.playerId}-mb-comp-${clickComponent}`).classList.remove('vjs-hidden');
         });
       });
 
-      var menuClose = document.createElement('li');
+      const menuClose = document.createElement('li');
       menuClose.innerHTML = 'Close';
-
-      menuClose.onclick = function (e) {
-        _this3.player.getChild('settingsMenuMobileModal').el().style.display = 'none';
+      menuClose.onclick = (e) => {
+        this.player.getChild('settingsMenuMobileModal').el().style.display = 'none';
       };
-
       menuClose.className = 'setting-menu-footer-default';
       menuTopLevel.appendChild(menuClose);
-    };
+    }
 
-    _proto.mobileBuildSecondLevelMenu = function mobileBuildSecondLevelMenu(component, item) {
-      var self = this;
-      this.player.getChild('controlBar').getChild('settingsMenuButton');
+    mobileBuildSecondLevelMenu(component, item) {
+      const componentMenu = this.player.getChild('controlBar').getChild(component).menu.contentEl_;
 
-      if (this.player.getChild('controlBar').getChild(component)) {
-        var componentMenu = this.player.getChild('controlBar').getChild(component).menu.contentEl_;
+      for (let i = 0; i < componentMenu.children.length; i++) {
+        const classCheck = componentMenu.children[i].getAttribute('class');
+        if (classCheck === 'setting-menu-header' || classCheck === 'vjs-menu-title') {
+          componentMenu.children[i].remove();
+        }
+      }
 
-        for (var i = 0; i < componentMenu.children.length; i++) {
-          var classCheck = componentMenu.children[i].getAttribute('class');
+      componentMenu.id = `${this.playerId}-mb-comp-${component.toLowerCase()}`;
+      componentMenu.classList.add('vjs-hidden');
+      componentMenu.classList.add('vjs-sm-mob-second-level');
+      componentMenu.classList.add('vjs-setting-menu-clear');
 
-          if (classCheck === 'setting-menu-header' || classCheck === 'vjs-menu-title') {
-            componentMenu.children[i].remove();
+      const backBtn = document.createElement('li');
+      backBtn.className = 'setting-menu-header';
+      backBtn.setAttribute('data-component', component.toLowerCase());
+
+      const backBtnArrow = document.createElement('i');
+      backBtnArrow.className = 'setting-menu-list-arrow setting-menu-list-arrow-left';
+      backBtn.appendChild(backBtnArrow);
+
+      backBtn.onclick = function (_evt) {
+        const set_state = document.getElementById(`${this.playerId}-mb-comp-${this.getAttribute('data-component')}`).querySelectorAll('.vjs-selected');
+        if (set_state !== undefined && set_state.length > 0) {
+          if (set_state[0].textContent) {
+            document.getElementById(`${this.playerId}-setting-menu-child-span-${this.getAttribute('data-component')}`).innerText = this.cleanDefault(set_state[0].textContent);
           }
         }
 
-        componentMenu.id = self.playerId + '-mb-comp-' + component.toLowerCase();
-        componentMenu.classList.add('vjs-hidden');
-        componentMenu.classList.add('vjs-sm-mob-second-level');
-        componentMenu.classList.add('vjs-setting-menu-clear');
-        var backBtn = document.createElement('li');
-        backBtn.className = 'setting-menu-header';
-        backBtn.setAttribute('data-component', component.toLowerCase());
-        var backBtnArrow = document.createElement('i');
-        backBtnArrow.className = 'setting-menu-list-arrow setting-menu-list-arrow-left';
-        backBtn.appendChild(backBtnArrow);
+        document.querySelectorAll('.vjs-sm-mob-top-level').forEach((element) => {
+          element.classList.remove('vjs-hidden');
+        });
 
-        backBtn.onclick = function (_evt) {
-          document.querySelectorAll('.vjs-sm-mob-top-level').forEach(function (element) {
-            element.classList.remove('vjs-hidden');
-          });
-          document.querySelectorAll('.vjs-menu-content').forEach(function (element) {
+        document.querySelectorAll('.vjs-menu-content').forEach((element) => {
+          element.classList.add('vjs-hidden');
+        });
+
+        document.querySelectorAll('.vjs-sm-list-item').forEach((element) => {
+          element.classList.remove('vjs-hidden');
+        });
+
+        document.querySelectorAll('.vjs-menu-content').forEach((element) => {
+          if (element.classList.value.includes('vjs-lock')) {
+            element.classList.remove('vjs-lock');
+            element.classList.add('vjs-hidden');
+          }
+        });
+      };
+
+      const backBtnInner = document.createElement('span');
+      backBtnInner.innerHTML = this.options.languages.back;
+      backBtn.appendChild(backBtnInner);
+
+      componentMenu.insertBefore(backBtn, componentMenu.firstChild);
+      item.appendChild(componentMenu);
+    }
+
+    buildTopLevelMenu() {
+      const self = this;
+      const settingsButton = self.player.getChild('controlBar').getChild('settingsMenuButton');
+      const main = settingsButton.menu.contentEl_;
+
+      main.innerHTML = "";
+      main.classList.add('vjs-sm-top-level');
+
+      const menuTitle = document.createElement('li');
+      menuTitle.className = 'vjs-sm-top-level-header';
+      const menuTitleInner = document.createElement("span");
+      menuTitleInner.innerHTML = self.options.languages.settings;
+      menuTitle.appendChild(menuTitleInner);
+      main.appendChild(menuTitle);
+
+      const comps = [];
+      let chapter = false;
+      let subtitles = false;
+
+      if (self.player.textTracks().tracks_) {
+        self.player.textTracks().tracks_.forEach((ele) => {
+          if (ele.kind === 'chapters') {
+            chapter = true;
+          }
+          if (ele.kind === 'subtitles' || ele.kind === 'captions') {
+            subtitles = true;
+          }
+        });
+      }
+
+      if (!chapter) {
+        comps.push('ChaptersButton');
+      }
+
+      if (!subtitles) {
+        comps.push('SubsCapsButton');
+      }
+
+      self.options.items.filter((item) => !comps.includes(item)).forEach((component) => {
+        if (self.player.getChild('controlBar').getChild(component)) {
+          const textContent = self.setInitialStates(component);
+          self.player.getChild('controlBar').getChild(component).addClass('vjs-hide-settings-menu-item');
+
+          const settingItem = document.createElement('li');
+          settingItem.innerHTML = textContent.language;
+          settingItem.setAttribute('data-component', component.toLowerCase());
+          settingItem.className = 'vjs-sm-list-item';
+
+          const settingItemArrow = document.createElement('i');
+          settingItemArrow.className = 'setting-menu-list-arrow setting-menu-list-arrow-right';
+          settingItem.appendChild(settingItemArrow);
+
+          const settingItemSpan = document.createElement('span');
+          settingItemSpan.id = `${self.playerId}-setting-menu-child-span-${component.toLowerCase()}`;
+          settingItemSpan.innerHTML = textContent.default;
+          settingItem.appendChild(settingItemSpan);
+
+          main.appendChild(settingItem);
+
+          setTimeout(() => {
+            self.buildMenuList(component);
+          }, component === 'ChaptersButton' ? 1000 : 0);
+        }
+      });
+
+      const settingMenuItems = document.querySelectorAll('.vjs-sm-list-item');
+      Array.from(settingMenuItems).forEach((link) => {
+        link.addEventListener('click', function (event) {
+          document.querySelectorAll('.vjs-sm-top-level').forEach((element) => {
             element.classList.add('vjs-hidden');
           });
-          var set_state = document.getElementById(self.playerId + '-mb-comp-' + this.getAttribute('data-component')).querySelectorAll('.vjs-selected');
 
-          if (set_state !== undefined && set_state.length > 0) {
-            if (set_state[0].textContent) {
-              document.getElementById(self.playerId + '-setting-menu-child-span-' + this.getAttribute('data-component')).innerText = self.cleanDefault(set_state[0].textContent);
-            }
-          }
+          const active = document.getElementById(`${self.playerId}-setting-menu-child-menu-${this.getAttribute('data-component')}`);
+          active.classList.remove('vjs-hidden');
+          active.classList.add('vjs-lock');
 
-          document.querySelectorAll('.vjs-sm-list-item').forEach(function (element) {
-            element.classList.remove('vjs-hidden');
-          });
-          document.querySelectorAll('.vjs-menu-content').forEach(function (element) {
-            if (element.classList.value.includes('vjs-lock')) {
-              element.classList.remove('vjs-lock');
-              element.classList.add('vjs-hidden');
-            }
-          });
-        };
+          event.preventDefault();
+        });
+      });
+    }
 
-        var backBtnInner = document.createElement('span');
-        backBtnInner.innerHTML = self.options.languages.back;
-        backBtn.appendChild(backBtnInner);
-        componentMenu.insertBefore(backBtn, componentMenu.firstChild);
-        item.appendChild(componentMenu);
-      }
-    };
+    buildMenuList(component) {
+      const self = this;
+      const settingsButton = self.player.getChild('controlBar').getChild('settingsMenuButton');
 
-    _proto.buildMenuList = function buildMenuList(component) {
-      var self = this;
-      var settingsButton = this.player.getChild('controlBar').getChild('settingsMenuButton');
+      if (self.player.getChild('controlBar').getChild(component)) {
+        const componentMenu = self.player.getChild('controlBar').getChild(component).menu.contentEl_;
 
-      if (this.player.getChild('controlBar').getChild(component)) {
-        var componentMenu = this.player.getChild('controlBar').getChild(component).menu.contentEl_;
-
-        for (var i = 0; i < componentMenu.children.length; i++) {
-          var classCheck = componentMenu.children[i].getAttribute('class');
-
+        for (let i = 0; i < componentMenu.children.length; i++) {
+          const classCheck = componentMenu.children[i].getAttribute('class');
           if (classCheck === 'setting-menu-header' || classCheck === 'vjs-menu-title') {
             componentMenu.children[i].remove();
           }
         }
 
-        componentMenu.id = self.playerId + '-setting-menu-child-menu-' + component.toLowerCase();
+        componentMenu.id = `${self.playerId}-setting-menu-child-menu-${component.toLowerCase()}`;
         componentMenu.classList.add('vjs-hidden');
         componentMenu.classList.add('vjs-setting-menu-clear');
-        var backBtn = document.createElement('li');
+
+        const backBtn = document.createElement('li');
         backBtn.className = 'setting-menu-header';
         backBtn.setAttribute('data-component', component.toLowerCase());
-        var backBtnArrow = document.createElement('i');
+
+        const backBtnArrow = document.createElement('i');
         backBtnArrow.className = 'setting-menu-list-arrow setting-menu-list-arrow-left';
         backBtn.appendChild(backBtnArrow);
 
         backBtn.onclick = function (_evt) {
-          var set_state = document.getElementById(self.playerId + '-setting-menu-child-menu-' + this.getAttribute('data-component')).querySelectorAll('.vjs-selected');
-
+          const set_state = document.getElementById(`${self.playerId}-setting-menu-child-menu-${this.getAttribute('data-component')}`).querySelectorAll('.vjs-selected');
           if (set_state !== undefined && set_state.length > 0) {
             if (set_state[0].textContent) {
-              document.getElementById(self.playerId + '-setting-menu-child-span-' + this.getAttribute('data-component')).innerText = self.cleanDefault(set_state[0].textContent);
+              document.getElementById(`${self.playerId}-setting-menu-child-span-${this.getAttribute('data-component')}`).innerText = self.cleanDefault(set_state[0].textContent);
             }
           }
 
-          document.querySelectorAll('.vjs-sm-top-level').forEach(function (element) {
+          document.querySelectorAll('.vjs-sm-top-level').forEach((element) => {
             element.classList.remove('vjs-hidden');
           });
-          document.querySelectorAll('.vjs-menu-content').forEach(function (element) {
+
+          document.querySelectorAll('.vjs-menu-content').forEach((element) => {
             if (element.classList.value.includes('vjs-lock')) {
               element.classList.remove('vjs-lock');
               element.classList.add('vjs-hidden');
@@ -346,15 +433,16 @@
           });
         };
 
-        var backBtnInner = document.createElement('span');
+        const backBtnInner = document.createElement('span');
         backBtnInner.innerHTML = self.options.languages.back;
         backBtn.appendChild(backBtnInner);
+
         componentMenu.insertBefore(backBtn, componentMenu.firstChild);
         settingsButton.menu.el().appendChild(componentMenu);
       }
-    };
+    }
 
-    _proto.setInitialStates = function setInitialStates(component) {
+    setInitialStates(component) {
       switch (component) {
         case 'RatesButton':
           return {
@@ -375,32 +463,28 @@
           };
 
         case 'AudioTrackButton':
-          var audioTracks = this.player.audioTracks();
-          var defaultAudio = this.options.languages.defaultAudio;
-          var x = audioTracks.length;
-
-          while (x--) {
+          let defaultAudio = this.options.languages.default_audio;
+          const audioTracks = this.player.audioTracks();
+          for (let x = audioTracks.length - 1; x >= 0; x--) {
             if (audioTracks[x].enabled) {
               defaultAudio = audioTracks[x].label;
+              break;
             }
           }
-
           return {
             default: defaultAudio,
             language: this.options.languages.audio
           };
 
         case 'SubsCapsButton':
-          var captionTracks = this.player.textTracks();
-          var defaultCaptions = this.options.languages.captions_off;
-          var z = captionTracks.length;
-
-          while (z--) {
+          let defaultCaptions = this.options.languages.captions_off;
+          const captionTracks = this.player.textTracks();
+          for (let z = captionTracks.length - 1; z >= 0; z--) {
             if (captionTracks[z].kind === 'subtitles' && captionTracks[z].mode === 'showing') {
               defaultCaptions = captionTracks[z].label;
+              break;
             }
           }
-
           return {
             default: defaultCaptions,
             language: this.options.languages.subtitles
@@ -412,30 +496,30 @@
             language: 'Menu'
           };
       }
-    };
+    }
 
-    _proto.removeElementsByClass = function removeElementsByClass(className) {
-      document.querySelectorAll('.vjs-sm-top-level').forEach(function (element) {
+    removeElementsByClass(className) {
+      document.querySelectorAll('.vjs-sm-top-level').forEach((element) => {
         element.classList.remove('vjs-hidden');
       });
-      var elements = document.getElementsByClassName(className);
 
+      const elements = document.getElementsByClassName(className);
       while (elements.length > 0) {
         elements[0].parentNode.removeChild(elements[0]);
       }
-    };
+    }
 
-    _proto.cleanDefault = function cleanDefault(state) {
+    cleanDefault(state) {
       state = state.replace(/\s\s+/g, ' ');
-      var stateComma = state.indexOf(',');
-      state = state.substring(0, stateComma != -1 ? stateComma : state.length);
+      const stateComma = state.indexOf(',');
+      state = state.substring(0, stateComma !== -1 ? stateComma : state.length);
       state = state.replace(/(<([^>]+)>)/ig, "");
       return state;
-    };
+    }
 
-    _proto.formatBps = function formatBps(bits) {
-      var i = -1;
-      var byteUnits = [' kbps', ' Mbps', ' Gbps', ' Tbps', 'Pbps', 'Ebps', 'Zbps', 'Ybps'];
+    formatBps(bits) {
+      let i = -1;
+      const byteUnits = [' kbps', ' Mbps', ' Gbps', ' Tbps', 'Pbps', 'Ebps', 'Zbps', 'Ybps'];
 
       do {
         bits = bits / 1024;
@@ -443,15 +527,10 @@
       } while (bits > 1024);
 
       return Math.max(bits, 0.1).toFixed(1) + byteUnits[i];
-    };
+    }
+  }
 
-    return SettingsMenu;
-  })(Plugin);
-
-  SettingsMenu.defaultState = {};
-  SettingsMenu.VERSION = version;
-
-  videojs__default.registerPlugin('settingsMenu', SettingsMenu);
+  videojs.registerPlugin('settingsMenu', SettingsMenu);
 
   return SettingsMenu;
 }));
